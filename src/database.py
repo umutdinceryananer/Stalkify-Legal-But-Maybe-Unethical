@@ -51,6 +51,16 @@ def is_first_run(playlist_id: str) -> bool:
             return cur.fetchone()[0] == 0
 
 
+def get_known_track_count(playlist_id: str) -> int:
+    with _connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT COUNT(*) FROM tracked_tracks WHERE playlist_id = %s",
+                (playlist_id,),
+            )
+            return cur.fetchone()[0]
+
+
 def add_playlist(playlist_id: str, name: str, owner_id: str) -> None:
     with _connection() as conn:
         with conn.cursor() as cur:

@@ -88,8 +88,22 @@ class SpotifyClient:
         response.raise_for_status()
         return response.json()
 
-    def get_playlist_tracks(self, playlist_id: str) -> list[Track]:
-        """Scrape all tracks from a public Spotify playlist via the web player."""
+    def get_playlist_tracks(
+        self,
+        playlist_id: str,
+        known_ids: set[str] | None = None,
+        expected_new: int | None = None,
+    ) -> list[Track]:
+        """Scrape tracks from a public Spotify playlist via the web player.
+
+        known_ids=None  → first run: full top-to-bottom scan, returns all tracks.
+        known_ids={...} → incremental scan: jumps to the end of the playlist,
+                          scrolls upward, and stops as soon as a known track ID
+                          is found. Returns only the newly added tracks in
+                          playlist order (oldest-first among new ones).
+        expected_new    → if provided, stop collecting as soon as this many new
+                          tracks have been found (prevents over-scanning).
+        """
         from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
         from playwright.sync_api import sync_playwright
 
@@ -120,74 +134,139 @@ class SpotifyClient:
                 browser.close()
                 return []
 
-            # Scroll and collect data in the same loop.
-            # Spotify uses virtual scroll: rows leaving the viewport are removed
-            # from the DOM, so the row count stays roughly constant. Staleness
-            # is detected by whether new track IDs were found, not by DOM count.
-            stale_rounds = 0
-            while stale_rounds < 5:
-                rows = page.query_selector_all('[data-testid="tracklist-row"]')
-                new_found = False
+            if known_ids is None:
+                # Full scan: scroll top-to-bottom and collect every track.
+                # Spotify uses virtual scroll — rows leaving the viewport are
+                # removed from the DOM. Staleness is detected by whether new
+                # track IDs were found, not by DOM element count.
+                stale_rounds = 0
+                while stale_rounds < 5:
+                    rows = page.query_selector_all('[data-testid="tracklist-row"]')
+                    new_found = False
 
-                for row in rows:
-                    track_link = row.query_selector('a[href*="/track/"]')
-                    if not track_link:
-                        continue
+                    for row in rows:
+                        track_link = row.query_selector('a[href*="/track/"]')
+                        if not track_link:
+                            continue
+                        href = track_link.get_attribute("href") or ""
+                        track_id = href.split("/track/")[-1].split("?")[0]
+                        if not track_id or track_id in seen_ids:
+                            continue
+                        seen_ids.add(track_id)
+                        new_found = True
+                        tracks.append(self._build_track(track_link, track_id, row))
 
-                    href = track_link.get_attribute("href") or ""
-                    track_id = href.split("/track/")[-1].split("?")[0]
-                    if not track_id or track_id in seen_ids:
-                        continue
-
-                    seen_ids.add(track_id)
-                    new_found = True
-
-                    track_name = track_link.inner_text().strip()
-                    artist_links = row.query_selector_all('a[href*="/artist/"]')
-                    artist_names = [a.inner_text().strip() for a in artist_links]
-                    album_link = row.query_selector('a[href*="/album/"]')
-                    album_name = album_link.inner_text().strip() if album_link else ""
-
-                    tracks.append(
-                        Track(
-                            track_id=track_id,
-                            track_name=track_name,
-                            artist_names=artist_names,
-                            album_name=album_name,
-                            spotify_url=f"{self._WEB_BASE}/track/{track_id}",
-                            added_at=None,
-                        )
+                    stale_rounds = 0 if new_found else stale_rounds + 1
+                    page.evaluate(
+                        "const r = document.querySelectorAll('[data-testid=\"tracklist-row\"]');"
+                        "if (r.length) r[r.length - 1].scrollIntoView({block: 'end'});"
                     )
+                    page.wait_for_timeout(1000)
 
-                stale_rounds = 0 if new_found else stale_rounds + 1
-                # Scroll via JavaScript to avoid stale element handle errors.
-                # Virtual scroll removes rows from the DOM while we iterate,
-                # so Python-held references become detached. JS re-queries fresh.
-                page.evaluate(
-                    "const r = document.querySelectorAll('[data-testid=\"tracklist-row\"]');"
-                    "if (r.length) r[r.length - 1].scrollIntoView({block: 'end'});"
-                )
-                page.wait_for_timeout(1000)
+            else:
+                # Incremental scan: position at the end of the playlist first,
+                # then scroll upward collecting unknown tracks until a known ID
+                # is found. This avoids scanning the entire playlist on every run
+                # and eliminates false positives from mid-playlist scraper drift.
+
+                # Phase 1: fast-scroll to the physical end of the playlist.
+                # Stop when the last visible track ID is stable across iterations.
+                last_bottom_id: str | None = None
+                stable_rounds = 0
+                while stable_rounds < 3:
+                    page.evaluate(
+                        "const r = document.querySelectorAll('[data-testid=\"tracklist-row\"]');"
+                        "if (r.length) r[r.length - 1].scrollIntoView({block: 'end'});"
+                    )
+                    page.wait_for_timeout(700)
+                    rows = page.query_selector_all('[data-testid="tracklist-row"]')
+                    bottom_id: str | None = None
+                    for row in reversed(rows):
+                        link = row.query_selector('a[href*="/track/"]')
+                        if link:
+                            href = link.get_attribute("href") or ""
+                            tid = href.split("/track/")[-1].split("?")[0]
+                            if tid:
+                                bottom_id = tid
+                                break
+                    stable_rounds = stable_rounds + 1 if bottom_id == last_bottom_id else 0
+                    last_bottom_id = bottom_id
+
+                # Phase 2: scroll upward, collecting unknown tracks until a
+                # known track ID appears in the viewport, or until expected_new
+                # tracks have been collected (whichever comes first).
+                stale_rounds = 0
+                hit_known = False
+                while stale_rounds < 3 and not hit_known:
+                    rows = page.query_selector_all('[data-testid="tracklist-row"]')
+                    new_found = False
+
+                    for row in reversed(rows):
+                        track_link = row.query_selector('a[href*="/track/"]')
+                        if not track_link:
+                            continue
+                        href = track_link.get_attribute("href") or ""
+                        track_id = href.split("/track/")[-1].split("?")[0]
+                        if not track_id:
+                            continue
+                        if track_id in known_ids:
+                            hit_known = True
+                            break
+                        if track_id not in seen_ids:
+                            seen_ids.add(track_id)
+                            new_found = True
+                            tracks.append(self._build_track(track_link, track_id, row))
+                            if expected_new is not None and len(tracks) >= expected_new:
+                                hit_known = True  # collected exactly what we need
+                                break
+
+                    if hit_known:
+                        break
+
+                    stale_rounds = 0 if new_found else stale_rounds + 1
+                    page.evaluate(
+                        "const r = document.querySelectorAll('[data-testid=\"tracklist-row\"]');"
+                        "if (r.length) r[0].scrollIntoView({block: 'start'});"
+                    )
+                    page.wait_for_timeout(1000)
+
+                # Reverse so tracks are returned in playlist order (oldest first).
+                tracks.reverse()
 
             browser.close()
 
-        logger.info(
-            "Scraped %d tracks from playlist %s.", len(tracks), playlist_id
-        )
+        logger.info("Scraped %d track(s) from playlist %s.", len(tracks), playlist_id)
         return tracks
+
+    def _build_track(self, track_link, track_id: str, row) -> "Track":
+        """Extract full Track data from a DOM row element."""
+        track_name = track_link.inner_text().strip()
+        artist_links = row.query_selector_all('a[href*="/artist/"]')
+        artist_names = [a.inner_text().strip() for a in artist_links]
+        album_link = row.query_selector('a[href*="/album/"]')
+        album_name = album_link.inner_text().strip() if album_link else ""
+        return Track(
+            track_id=track_id,
+            track_name=track_name,
+            artist_names=artist_names,
+            album_name=album_name,
+            spotify_url=f"{self._WEB_BASE}/track/{track_id}",
+            added_at=None,
+        )
 
 
     def get_playlist_info(self, playlist_id: str) -> dict | None:
-        """Returns playlist name and owner ID, or None if inaccessible."""
+        """Returns playlist name, owner ID, and track count, or None if inaccessible."""
         data = self._get(
             f"{self._API_BASE}/playlists/{playlist_id}",
-            params={"fields": "id,name,owner(id)"},
+            params={"fields": "id,name,owner(id),tracks(total)"},
         )
         if data is None:
             return None
         return {
             "name": data["name"],
             "owner_id": data["owner"]["id"],
+            "track_count": data["tracks"]["total"],
         }
 
 
