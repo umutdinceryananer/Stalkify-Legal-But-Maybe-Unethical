@@ -51,6 +51,30 @@ def is_first_run(playlist_id: str) -> bool:
             return cur.fetchone()[0] == 0
 
 
+def add_playlist(playlist_id: str, name: str, owner_id: str) -> None:
+    with _connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO playlists (id, name, owner_id)
+                VALUES (%s, %s, %s)
+                ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, is_active = TRUE
+                """,
+                (playlist_id, name, owner_id),
+            )
+    logger.info("Playlist '%s' (%s) added.", name, playlist_id)
+
+
+def deactivate_playlist(playlist_id: str) -> None:
+    with _connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE playlists SET is_active = FALSE WHERE id = %s",
+                (playlist_id,),
+            )
+    logger.info("Playlist %s deactivated.", playlist_id)
+
+
 def save_tracks(tracks: list[Track], playlist_id: str) -> None:
     if not tracks:
         return

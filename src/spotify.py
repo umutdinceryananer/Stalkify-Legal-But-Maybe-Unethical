@@ -137,6 +137,20 @@ class SpotifyClient:
         return tracks
 
 
+    def get_playlist_info(self, playlist_id: str) -> dict | None:
+        """Returns playlist name and owner ID, or None if inaccessible."""
+        data = self._get(
+            f"{self._API_BASE}/playlists/{playlist_id}",
+            params={"fields": "id,name,owner(id)"},
+        )
+        if data is None:
+            return None
+        return {
+            "name": data["name"],
+            "owner_id": data["owner"]["id"],
+        }
+
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     client = SpotifyClient()
