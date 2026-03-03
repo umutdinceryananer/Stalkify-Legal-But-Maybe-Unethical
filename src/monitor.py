@@ -3,10 +3,10 @@ import time
 
 from src.database import (
     get_active_playlists,
-    get_known_track_count,
     get_known_track_ids,
     is_first_run,
     save_tracks,
+    update_snapshot_id,
 )
 from src.spotify import SpotifyClient
 from src.telegram import send_error_notification, send_new_track_notification
@@ -38,6 +38,15 @@ def run() -> None:
 
         if is_first_run(playlist_id):
             # Full scan to build the baseline — no notifications sent.
+            # Fetch snapshot_id upfront so we can store it after the baseline.
+            info = client.get_playlist_info(playlist_id)
+            if info is None:
+                logger.warning(
+                    "Could not fetch playlist info for '%s' (%s) — skipping.",
+                    playlist_name,
+                    playlist_id,
+                )
+                continue
             all_tracks = client.get_playlist_tracks(playlist_id)
             if not all_tracks:
                 logger.warning(
@@ -47,6 +56,7 @@ def run() -> None:
                 )
                 continue
             save_tracks(all_tracks, playlist_id)
+            update_snapshot_id(playlist_id, info["snapshot_id"])
             logger.info(
                 "First run for '%s': saved %d tracks, no notifications sent.",
                 playlist_name,
@@ -54,8 +64,9 @@ def run() -> None:
             )
             continue
 
-        # Use the Spotify API track count as an authoritative gate.
-        # Only launch Playwright if the API confirms new tracks were added.
+        # Use the Spotify API snapshot_id as an authoritative change gate.
+        # snapshot_id changes on any playlist modification; if it matches what
+        # we stored last run, nothing has changed — skip Playwright entirely.
         info = client.get_playlist_info(playlist_id)
         if info is None:
             logger.warning(
@@ -65,36 +76,26 @@ def run() -> None:
             )
             continue
 
-        api_count = info["track_count"]
-        db_count = get_known_track_count(playlist_id)
-        expected_new = api_count - db_count
+        api_snapshot = info["snapshot_id"]
+        stored_snapshot = playlist["snapshot_id"]  # None if never set
 
-        if expected_new <= 0:
-            logger.info(
-                "No new tracks in '%s' (API: %d, DB: %d).",
-                playlist_name,
-                api_count,
-                db_count,
-            )
+        if api_snapshot == stored_snapshot:
+            logger.info("No changes in '%s' (snapshot unchanged).", playlist_name)
             continue
 
         logger.info(
-            "%d new track(s) expected in '%s' (API: %d, DB: %d) — scraping.",
-            expected_new,
+            "Playlist '%s' changed (snapshot updated) — scraping.",
             playlist_name,
-            api_count,
-            db_count,
         )
 
         # Incremental scan: jump to the end, scroll up until a known track is
-        # found or exactly expected_new tracks have been collected.
+        # found. Returns only tracks added since the last run.
         known_ids = get_known_track_ids(playlist_id)
-        new_tracks = client.get_playlist_tracks(
-            playlist_id, known_ids=known_ids, expected_new=expected_new
-        )
+        new_tracks = client.get_playlist_tracks(playlist_id, known_ids=known_ids)
 
         if not new_tracks:
             logger.info("No new tracks scraped from '%s'.", playlist_name)
+            update_snapshot_id(playlist_id, api_snapshot)
             continue
 
         logger.info(
@@ -106,6 +107,7 @@ def run() -> None:
             time.sleep(1)  # Telegram rate limit: 1 message/second per chat
 
         save_tracks(new_tracks, playlist_id)
+        update_snapshot_id(playlist_id, api_snapshot)
 
 
 if __name__ == "__main__":

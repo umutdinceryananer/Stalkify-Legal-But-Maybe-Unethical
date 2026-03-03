@@ -256,17 +256,16 @@ class SpotifyClient:
 
 
     def get_playlist_info(self, playlist_id: str) -> dict | None:
-        """Returns playlist name, owner ID, and track count, or None if inaccessible."""
+        """Returns playlist name, owner ID, and snapshot_id, or None if inaccessible."""
         data = self._get(
             f"{self._API_BASE}/playlists/{playlist_id}",
-            params={"fields": "id,name,owner(id),tracks(total)"},
         )
         if data is None:
             return None
         return {
             "name": data["name"],
             "owner_id": data["owner"]["id"],
-            "track_count": data["tracks"]["total"],
+            "snapshot_id": data["snapshot_id"],
         }
 
 

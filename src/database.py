@@ -27,7 +27,9 @@ def _connection() -> Generator:
 def get_active_playlists() -> list[dict]:
     with _connection() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute("SELECT id, name FROM playlists WHERE is_active = TRUE")
+            cur.execute(
+                "SELECT id, name, snapshot_id FROM playlists WHERE is_active = TRUE"
+            )
             return [dict(row) for row in cur.fetchall()]
 
 
@@ -49,6 +51,15 @@ def is_first_run(playlist_id: str) -> bool:
                 (playlist_id,),
             )
             return cur.fetchone()[0] == 0
+
+
+def update_snapshot_id(playlist_id: str, snapshot_id: str) -> None:
+    with _connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE playlists SET snapshot_id = %s WHERE id = %s",
+                (snapshot_id, playlist_id),
+            )
 
 
 def get_known_track_count(playlist_id: str) -> int:
