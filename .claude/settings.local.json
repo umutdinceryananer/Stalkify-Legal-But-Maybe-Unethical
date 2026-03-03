@@ -1,7 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "Bash(gh issue list:*)"
+      "Bash(gh issue list:*)",
+      "WebFetch(domain:developer.spotify.com)",
+      "WebSearch",
+      "WebFetch(domain:techcrunch.com)",
+      "WebFetch(domain:community.spotify.com)",
+      "Bash(git -C \"C:\\\\Users\\\\umyana\\\\OneDrive - SAS\\\\Desktop\\\\stalkify-but-legal\" status)"
     ]
   }
 }

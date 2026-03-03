@@ -1,6 +1,8 @@
 # Roadmap — stalkify-but-legal
 
-> Mimari kararlar: Python · GitHub Actions (cron) · Supabase (PostgreSQL) · Telegram Bot API · Spotify Client Credentials
+> Mimari kararlar: Python · GitHub Actions (cron) · Supabase (PostgreSQL) · Telegram Bot API · Playwright (open.spotify.com scraping)
+>
+> **Not:** Şubat 2026 Spotify API değişiklikleri, `/playlists/{id}/tracks` endpoint'ini kaldırdı ve `/playlists/{id}/items` yalnızca sahip olunan playlist'ler için erişilebilir hale getirdi. Client Credentials ve OAuth her ikisi de başkasının playlist'lerine erişimi engelliyor. Bu nedenle track verisi Playwright ile `open.spotify.com`'dan çekiliyor. Spotify API yalnızca playlist metadata'sı (isim, owner) için kullanılıyor.
 
 ---
 
@@ -82,44 +84,46 @@ Projenin çalışması için gereken tüm harici servislerin (Spotify, Supabase,
 - [ ] `.github/workflows/monitor.yml` iskeletini oluştur.
 
 ### Technical Details
-- **Auth Method:** Client Credentials Flow — kullanıcı etkileşimi gerektirmez, yalnızca `client_id` + `client_secret` ile token alınır.
-- **Token Endpoint:** `POST https://accounts.spotify.com/api/token` (`grant_type=client_credentials`)
-- **Token Süresi:** 3600 saniye — her GitHub Actions run'ında yeni token alınır, saklamaya gerek yok.
-- **Scope:** Gerekmez — public endpoint'ler için scope zorunlu değil.
-- **Private Playlist Davranışı:** API 403 döndürürse playlist sessizce atlanır, hata fırlatılmaz.
+- **Spotify API Kullanımı:** Client Credentials Flow — yalnızca playlist metadata'sı (`GET /playlists/{id}?fields=id,name,owner(id)`) için kullanılıyor. Track verisi API üzerinden çekilmiyor.
+- **Track Verisi:** Playwright ile `open.spotify.com/playlist/{id}` scrape ediliyor — auth gerektirmiyor, public playlist'ler için açık.
+- **Şubat 2026 Kısıtlaması:** `/playlists/{id}/tracks` kaldırıldı, `/playlists/{id}/items` yalnızca sahip olunan playlist'lerde çalışıyor.
 
 ### Definition of Done
-- `python -m src.spotify` komutu Spotify API'dan geçerli bir access token alıyor.
+- `python -m src.spotify` komutu Spotify API'dan geçerli bir access token alıyor (metadata için).
 - Supabase bağlantısı sağlanıyor ve tablolar oluşturulmuş durumda.
 - Telegram botuna test mesajı gönderilebiliyor.
 - GitHub Actions workflow manuel tetiklendiğinde (`workflow_dispatch`) başarıyla çalışıyor.
 
 ---
 
-## Issue 2: Spotify API Data Retrieval Implementation
+## Issue 2: Playlist Track Scraping via Playwright
 **Status:** OPEN
 
 ### Description
-`src/spotify.py` modülünü genişleterek takip edilen playlist'lerden tüm şarkı verilerini çeken ve yapılandırılmış Python nesnelerine dönüştüren bir client yazmak.
+`src/spotify.py` içindeki `get_playlist_tracks()` fonksiyonunu Playwright tabanlı web scraping ile yeniden yazmak. Spotify API'sı bu veriyi artık sağlamadığından `open.spotify.com/playlist/{id}` sayfası headless Chromium ile yüklenerek track listesi DOM'dan çekiliyor.
 
 ### Tasks
-- [ ] `Track` dataclass'ını tanımla:
-  - `track_id`, `track_name`, `artist_names`, `album_name`, `spotify_url`, `added_at`
-- [ ] `get_playlist_tracks(playlist_id: str) -> list[Track]` fonksiyonunu yaz.
-- [ ] 100'den fazla şarkı içeren playlist'ler için `offset` tabanlı pagination'ı implement et.
-- [ ] `fields` query parametresi ile payload boyutunu küçült.
-- [ ] Private/silinmiş playlist'ler için 403/404 response'larını yakala, `None` ya da boş liste döndür (crash yok).
-- [ ] Supabase'deki `playlists` tablosundan aktif playlist ID'lerini çeken `get_active_playlists() -> list[str]` fonksiyonunu `src/database.py`'a ekle.
+- [ ] `playwright` paketini `requirements.txt`'e ekle.
+- [ ] `get_playlist_tracks(playlist_id: str) -> list[Track]` fonksiyonunu Playwright ile yeniden yaz:
+  - Headless Chromium ile `open.spotify.com/playlist/{id}` sayfasını aç.
+  - Track listesinin DOM'a yüklenmesini bekle.
+  - Track adı, sanatçı, albüm ve Spotify URL'ini DOM'dan çek.
+  - Track ID'yi Spotify URL'inden parse et (`/track/{id}` pattern).
+  - `Track` nesneleri listesi döndür.
+- [ ] Playlist erişilemez veya sayfa hata verirse boş liste döndür (crash yok).
+- [ ] 100+ şarkılı playlist'ler için scroll/pagination davranışını handle et.
+- [ ] `scripts/test_spotify.py`'ı yeni implementasyona göre güncelle.
 
 ### Technical Details
-- **Endpoint:** `GET https://api.spotify.com/v1/playlists/{playlist_id}/tracks`
-- **Fields Filter:** `items(added_at,track(id,name,artists(name),album(name),external_urls))`
-- **Pagination:** `limit=100&offset={n}` — response'daki `next` alanı `None` olana kadar devam et.
-- **Rate Limit:** Spotify, Client Credentials için agresif rate limit uygulamaz; 6 playlist için sorun yaşanmaz.
+- **Kaynak:** `https://open.spotify.com/playlist/{playlist_id}` — auth gerektirmiyor.
+- **Browser:** Playwright Chromium (headless).
+- **Track ID Çıkarımı:** Spotify URL pattern'ından: `https://open.spotify.com/track/{track_id}`
+- **`added_at` Alanı:** Web player'dan güvenilir biçimde alınamıyor — `None` olarak bırakılır, `detected_at` (DB'nin kendi timestamp'i) yeterli.
+- **Bot Detection Riski:** 30 dakikalık çalışma aralığı ve kişisel kullanım nedeniyle düşük.
 
 ### Definition of Done
-- 100+ şarkılı bir playlist'in tüm şarkıları eksiksiz çekilebiliyor.
-- Private/silinmiş playlist istekleri uygulamayı çökertmiyor.
+- 100+ şarkılı bir playlist'in tüm track ID'leri eksiksiz çekilebiliyor.
+- Erişilemeyen playlist'ler uygulamayı çökertmiyor.
 - Çıktı, tip güvenli `Track` nesnelerinden oluşan bir liste.
 
 ---
@@ -159,7 +163,7 @@ Projenin çalışması için gereken tüm harici servislerin (Spotify, Supabase,
 ### Tasks
 - [ ] Ana orkestrasyon döngüsünü yaz:
   1. Aktif playlist'leri DB'den çek.
-  2. Her playlist için Spotify'dan güncel şarkı listesini çek.
+  2. Her playlist için Playwright ile `open.spotify.com`'dan güncel şarkı listesini çek.
   3. Bilinen ID'leri DB'den çek (`set`).
   4. Farkı hesapla: `new_tracks = [t for t in current if t.track_id not in known_ids]`.
   5. Yeni şarkı varsa bildirim gönder (Issue 5).
@@ -218,27 +222,31 @@ Projenin çalışması için gereken tüm harici servislerin (Spotify, Supabase,
 **Status:** OPEN
 
 ### Description
-Spotify API rate limit'leri, ağ zaman aşımları ve bağlantı hatalarına karşı uygulamayı dayanıklı hale getirmek.
+Playwright scraping hataları, ağ zaman aşımları, bot detection ve Supabase bağlantı hatalarına karşı uygulamayı dayanıklı hale getirmek.
 
 ### Tasks
-- [ ] Spotify API çağrıları için `tenacity` ile retry mekanizması ekle:
+- [ ] Playwright scraping için retry mekanizması ekle (`tenacity`):
   - Max retry: 3
   - Bekleme: exponential backoff (1s, 2s, 4s)
-  - Retry koşulları: `requests.exceptions.Timeout`, `requests.exceptions.ConnectionError`, HTTP 429, HTTP 5xx
-- [ ] HTTP 429 response'undaki `Retry-After` header'ını oku ve o kadar bekle.
+  - Retry koşulları: sayfa yükleme timeout'u, DOM element bulunamadı, network hatası
+- [ ] Bot detection senaryosu: Spotify CAPTCHA veya erişim engeli sayfası döndürürse playlist'i sessizce atla, Telegram'a uyarı gönder.
+- [ ] Playwright browser başlatılamadığında hata fırlat ve Telegram'a ilet.
 - [ ] Supabase bağlantı hatalarını yakala, Telegram'a sistem hatası bildirimi gönder.
 - [ ] Her çalışma için structured logging ekle (`logging` modülü, JSON format).
 - [ ] Beklenmedik exception'lar `monitor.py`'ın en üstünde yakalanarak Telegram'a iletilsin, GitHub Actions run'ı başarısız sayılmasın.
+- [ ] Spotify API çağrıları (metadata için) için retry mekanizması koru.
 
 ### Technical Details
 - **Retry Kütüphanesi:** `tenacity`
+- **Playwright Timeout:** Sayfa yükleme için 30 saniye, DOM element bekleme için 15 saniye.
+- **Bot Detection Tespiti:** Page title veya URL'de Cloudflare/challenge sayfası içeriği kontrol edilir.
 - **Loglama:** `logging` (JSON formatter) — GitHub Actions log'larında aranabilir olması için.
 - **Hata Bildirimi:** `send_error_notification()` fonksiyonu (Issue 5'te tanımlı).
 
 ### Definition of Done
-- Geçici ağ hataları uygulamayı crash ettirmiyor.
-- HTTP 429 alındığında `Retry-After` süresi kadar bekleniyor.
-- Kalıcı hatalarda Telegram'a bildirim gönderiliyor.
+- Playwright sayfa yükleme hataları uygulamayı crash ettirmiyor.
+- Bot detection tespit edildiğinde playlist atlanıyor, Telegram'a uyarı gidiyor.
+- Supabase hataları yakalanıyor ve raporlanıyor.
 - GitHub Actions log'larında hatalar structured formatta görünüyor.
 
 ---
@@ -265,8 +273,10 @@ GitHub Actions cron workflow'unu production'a almak ve otomatik çalışma döng
 
 ### Technical Details
 - **Cron Sıklığı:** Her 30 dakika (`*/30 * * * *`). GitHub Actions'ta cron'lar yoğun saatlerde birkaç dakika gecikebilir — bu proje için kabul edilebilir.
-- **Ücretsiz Limit:** GitHub Actions free tier 2.000 dakika/ay → 30 dk'da bir çalışan job ~720 dakika/ay kullanır.
+- **Ücretsiz Limit:** GitHub Actions free tier 2.000 dakika/ay → Playwright ile her run ~2-3 dk sürer, 30 dk aralıkla ~2.880-4.320 dakika/ay kullanır. Free tier'ı aşabilir — gerekirse cron aralığı 60 dakikaya çıkarılır.
+- **Playwright Cache:** `~/.cache/ms-playwright` dizini `actions/cache` ile cache'lenmeli — her run'da ~300MB Chromium indirmesini önler.
 - **Dependency Cache:** `pip` bağımlılıkları cache'lenmeli, run süresi düşürülmeli.
+- **Playwright Install:** Workflow'a `playwright install chromium` adımı eklenmeli.
 
 ### Definition of Done
 - Workflow her 30 dakikada bir otomatik tetikleniyor.

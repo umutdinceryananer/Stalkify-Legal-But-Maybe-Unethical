@@ -30,9 +30,7 @@ class Track:
 class SpotifyClient:
     _TOKEN_URL = "https://accounts.spotify.com/api/token"
     _API_BASE = "https://api.spotify.com/v1"
-    _FIELDS = (
-        "items(added_at,track(id,name,artists(name),album(name),external_urls)),next"
-    )
+    _WEB_BASE = "https://open.spotify.com"
 
     def __init__(self) -> None:
         self._access_token: str | None = None
@@ -91,48 +89,85 @@ class SpotifyClient:
         return response.json()
 
     def get_playlist_tracks(self, playlist_id: str) -> list[Track]:
-        tracks: list[Track] = []
-        url = f"{self._API_BASE}/playlists/{playlist_id}/tracks"
-        params: dict = {"fields": self._FIELDS, "limit": 100, "offset": 0}
+        """Scrape all tracks from a public Spotify playlist via the web player."""
+        from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+        from playwright.sync_api import sync_playwright
 
-        while url:
-            data = self._get(url, params)
-            if data is None:
+        tracks: list[Track] = []
+        seen_ids: set[str] = set()
+        url = f"{self._WEB_BASE}/playlist/{playlist_id}"
+
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            context = browser.new_context(
+                user_agent=(
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) "
+                    "Chrome/122.0.0.0 Safari/537.36"
+                )
+            )
+            page = context.new_page()
+
+            try:
+                page.goto(url, wait_until="domcontentloaded", timeout=30000)
+                page.wait_for_selector(
+                    '[data-testid="tracklist-row"]', timeout=20000
+                )
+            except PlaywrightTimeoutError:
+                logger.warning(
+                    "Playlist page timed out or no tracks found: %s", url
+                )
+                browser.close()
                 return []
 
-            for item in data.get("items", []):
-                track_data = item.get("track")
-                if not track_data or not track_data.get("id"):
-                    # Local files and deleted tracks have no ID
+            # Scroll incrementally to trigger virtual-scroll loading
+            stale_rounds = 0
+            previous_count = 0
+            while stale_rounds < 3:
+                rows = page.query_selector_all('[data-testid="tracklist-row"]')
+                if len(rows) == previous_count:
+                    stale_rounds += 1
+                else:
+                    stale_rounds = 0
+                    previous_count = len(rows)
+                if rows:
+                    rows[-1].scroll_into_view_if_needed()
+                page.wait_for_timeout(800)
+
+            # Extract track data from all loaded rows
+            rows = page.query_selector_all('[data-testid="tracklist-row"]')
+            for row in rows:
+                track_link = row.query_selector('a[href*="/track/"]')
+                if not track_link:
                     continue
 
-                added_at_raw = item.get("added_at")
+                href = track_link.get_attribute("href") or ""
+                track_id = href.split("/track/")[-1].split("?")[0]
+                if not track_id or track_id in seen_ids:
+                    continue
+                seen_ids.add(track_id)
+
+                track_name = track_link.inner_text().strip()
+                artist_links = row.query_selector_all('a[href*="/artist/"]')
+                artist_names = [a.inner_text().strip() for a in artist_links]
+                album_link = row.query_selector('a[href*="/album/"]')
+                album_name = album_link.inner_text().strip() if album_link else ""
+
                 tracks.append(
                     Track(
-                        track_id=track_data["id"],
-                        track_name=track_data["name"],
-                        artist_names=[
-                            a["name"] for a in track_data.get("artists", [])
-                        ],
-                        album_name=track_data.get("album", {}).get("name", ""),
-                        spotify_url=track_data.get("external_urls", {}).get(
-                            "spotify", ""
-                        ),
-                        added_at=(
-                            datetime.fromisoformat(
-                                added_at_raw.replace("Z", "+00:00")
-                            )
-                            if added_at_raw
-                            else None
-                        ),
+                        track_id=track_id,
+                        track_name=track_name,
+                        artist_names=artist_names,
+                        album_name=album_name,
+                        spotify_url=f"{self._WEB_BASE}/track/{track_id}",
+                        added_at=None,
                     )
                 )
 
-            url = data.get("next") or ""
-            params = {}
+            browser.close()
 
         logger.info(
-            "Fetched %d tracks from playlist %s.", len(tracks), playlist_id
+            "Scraped %d tracks from playlist %s.", len(tracks), playlist_id
         )
         return tracks
 
