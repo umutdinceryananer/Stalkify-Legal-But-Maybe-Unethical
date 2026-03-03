@@ -25,8 +25,8 @@ class Config:
     database_url: str
     telegram_bot_token: str
     telegram_chat_id: str
-    groq_api_key: str | None       # Issue 9 — LLM entegrasyonuna kadar opsiyonel
-    genius_access_token: str | None  # Issue 10 — agentic analize kadar opsiyonel
+    groq_api_key: str | None        # Issue 9 — optional until LLM integration
+    genius_access_token: str | None  # Issue 10 — optional until agentic analysis
 
 
 config = Config(

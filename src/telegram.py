@@ -18,7 +18,7 @@ _SEND_URL = "https://api.telegram.org/bot{token}/sendMessage"
 
 
 def _escape(text: str) -> str:
-    """Telegram MarkdownV2 için özel karakterleri escape eder."""
+    """Escapes special characters for Telegram MarkdownV2."""
     return re.sub(r"([_*\[\]()~`>#\+\-=|{}.!])", r"\\\1", text)
 
 

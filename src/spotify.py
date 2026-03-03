@@ -103,7 +103,7 @@ class SpotifyClient:
             for item in data.get("items", []):
                 track_data = item.get("track")
                 if not track_data or not track_data.get("id"):
-                    # Yerel dosyalar veya silinmiş şarkılar ID içermez
+                    # Local files and deleted tracks have no ID
                     continue
 
                 added_at_raw = item.get("added_at")

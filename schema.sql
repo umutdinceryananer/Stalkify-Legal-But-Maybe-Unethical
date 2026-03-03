@@ -13,7 +13,7 @@ CREATE TABLE tracked_tracks (
     artist_names TEXT[]     NOT NULL,
     album_name  VARCHAR,
     spotify_url VARCHAR,
-    added_at    TIMESTAMPTZ,                    -- Playlist'e eklenme zamanı (Spotify verisi)
-    detected_at TIMESTAMPTZ DEFAULT NOW(),      -- Bizim tespit ettiğimiz zaman
+    added_at    TIMESTAMPTZ,                    -- When the track was added to the playlist (Spotify data)
+    detected_at TIMESTAMPTZ DEFAULT NOW(),      -- When we first detected this track
     PRIMARY KEY (track_id, playlist_id)
 );
