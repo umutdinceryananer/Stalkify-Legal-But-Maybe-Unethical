@@ -426,9 +426,9 @@ Workflow'u **Actions** sekmesinden manuel olarak da tetikleyebilirsin.
 
 İnsan sıklıkla kendisini, karşı tarafın ne yapacağını izlemek mecburiyetinde hissedeceği durumlara sokar. Böyle zamanlarda vesvese ve kuruntu, kişiyi olmayacak şeylerin ihtimalini hesaplamaya iter. Ben kendimi defalarca böyle ihtimallerin hesabını yaparken buldum.
 
-Analoji yapmam gerekirse bu anları, girişi ve çıkışı olan ama kapısı olmayan bir koridor gibi değerlendiriyorum. Koridorda durabilirsiniz. Hiç hareket etmeden, cenin pozisyonunda, zamanın geçmesini bekleyerek. Ben bunu insanın kendine yaptığı bir haksızlık olarak görüyorum. John Milton'ın benden çok daha radikal ve belki de anlaşılması daha kolay bir söylemiyle: *"Cennette hizmet etmektense, cehennemde hükmetmeyi yeğlerim."* Bu sözü bu süreçte kendime kutup yıldızı olarak seçtim diyebilirim.
+Analoji yapmam gerekirse bu anları, girişi, çıkışı ve hiç hatta kapısı bile bulunmayan bir koridor gibi değerlendiriyorum. Koridorda durabilirsiniz. Hiç hareket etmeden, cenin pozisyonunda, zamanın geçmesini bekleyerek. Bana göre bu insanın kendisine yaptığı bir haksızlık. John Milton'ın benden çok daha radikal ve belki de anlaşılması daha kolay bir söylemiyle: *"Cennette hizmet etmektense, cehennemde hükmetmeyi yeğlerim."* Bu sözü bu süreçte kendime kutup yıldızı olarak seçtim diyebilirim.
 
-Uzun bir süre öncesine kadar böyle anlarda, kendime de tezat oluşturacak şekilde, durmayı tercih ediyordum. Belki savunma mekanizması, belki içgüdüsel bir refleks. Sonra kendimi "madem bu koridordan belli bir süreliğine çıkamıyorum, o zaman tadını çıkarayım" diyerek bu kodları Claude ile yazarken buldum.
+Uzun bir süre öncesine kadar böyle anlarda, kendime de tezat oluşturacak şekilde, hareketsiz şekilde koridorda durmayı tercih ediyordum. Bilmiyorum, belki savunma mekanizması, belki de içgüdüsel bir refleks. Sonra kendimi "madem bu koridordan belli bir süreliğine çıkamıyorum, o zaman tadını çıkarayım" diyerek bu kodları Claude ile yazarken buldum.
 
 Ben yazılımla ilk tanıştığımda bunun bana para kazandıracak ve hayatımın sonuna kadar yapacağım bir görevler bütünü olduğunu sanıyordum. Bu bakış açımı değiştiren kişi babam oldu. Kendisi, tüketmeden var olamayan milyonların arasında üretmeden var olamayan ve eşine benzerine zor rastlanan birisidir. Onun bana yazılıma bir zanaat olarak yaklaşmamı önermesinin ardından ilk açık kaynak denemelerimi yaptım. Kesinlikle "ustalaştım" diyemem, ama en azından ne istediğimi seçme özgürlüğüme kavuştum diyebilirim.
 
@@ -440,20 +440,20 @@ Bazılarınıza sapkınca gelebilir. Belki bazılarınız yukarıdaki kod satır
 
 Bu sapkınlık ve etik dışılık argümanlarını ayrı ayrı incelemek istiyorum.
 
-**Sapkınlık** adı altında burada yapılan şeyleri tasvip etmeyebilirsiniz ve bu sizin fikrinizdir. Ancak buraya kadar okuduysanız ya bu repoyu kullanacaksınız, ya da gerçekten "bu dingil ne anlatıyor?" diyerek ekrana bakıyorsunuz. İlki için gelenler, bu dosyanın altındaki kurulum notlarına bakabilir. "Dingil" diye okumaya devam edenler için ise şunu söyleyebilirim: benim koridorda biraz daha geçireceğim vakit var. Belki kapıyı göremiyorum, belki de henüz ortada bir kapı yok. Ama olduğum anın tadını çıkarıyorum. Bunu dingil, mal, sapık ve benzeri sınıflandırmalarla karşılıyorsanız, size bir teşekkürü borç bilirim ve ötesinde bir şey söyleyemem.
+**Sapkınlık** adı altında burada yapılan şeyleri tasvip etmeyebilirsiniz ve bu sizin fikrinizdir. Ancak buraya kadar okuduysanız ya bu repoyu kullanacaksınız, ya da gerçekten "bu dingil ne anlatıyor?" diyerek ekrana bakıyorsunuz. İlki için gelenler, bu satırların üstündeki kurulum notlarına bakabilir. "Dingil" diye okumaya devam edenler için ise şunu söyleyebilirim: benim koridorda biraz daha geçireceğim vakit var. Belki kapıyı göremiyorum, belki de henüz ortada bir kapı yok. Ama olduğum anın tadını çıkarıyorum. Bunu dingil, mal, sapık ve benzeri sınıflandırmalarla karşılıyorsanız, size bir teşekkürü borç bilirim ve ötesinde bir şey söyleyemem.
 
 **Etik** meselesine gelince, tanımın içinden cımbızla çektiğim bir kısmı paylaşmak istiyorum:
 
 *"Etik: doğru davranışlarda bulunmak, iyi bir insan olmak ve insani değerler hakkında düşünme pratiği."*
 
-Cevabı aslında görüyorsunuz. Benim insani değerler hakkında düşünme pratiğim, en yüzeysel ve basit haliyle, bu günlerde cenin pozisyonunda geçmesini beklemek yerine somut bir şeyler çıkarmak. Altını çizmek isterim: ben tanımdan işime gelen kısmı çekip aldım. Kavramın "doğru davranışlarda bulunmak" ve "iyi bir insan olmak" kısımlarıyla ilgili hala pürüzlü düşüncelerim var.
+Cevabı aslında görüyorsunuz. Benim insani değerler hakkında düşünme pratiğim, en yüzeysel ve basit haliyle, bu günlerin cenin pozisyonunda geçmesini beklemek yerine somut bir şeyler çıkarmak. Altını çizmek isterim: ben tanımdan işime gelen kısmı çekip aldım. Kavramın "doğru davranışlarda bulunmak" ve "iyi bir insan olmak" kısımlarıyla ilgili hala pürüzlü düşüncelerim var.
 
 ---
 
 Daha fazla uzatmadan belirteyim: burada bahsettiğim koridor ve olası kapılar gerçek kişi ve kurumlarla ilgili değil, ama buna inanmak ya da inanmamak tamamen sizin inisiyatifinizde.
 
-Teknik şeylere geçmeden önce, konsept gereği araya bir şarkı sıkıştırayım ve sizi Claude ile geliştirdiğimiz (%90 falan Claude) proje ile baş başa bırakayım.
+Veda etmeden önce, konsept gereği araya bir şarkı sıkıştırayım ve sizi Claude ile geliştirdiğimiz (%90'ı falan Claude) proje ile baş başa bırakayım.
 
-🎵 {çilekeş şarkısının youtube linki buraya gelecek}
+[Çilekeş - Y.O.K.](https://www.youtube.com/watch?v=s9KTAxJGqks)
 
 Kalın sağlıcakla.
