@@ -1,9 +1,9 @@
 """
-End-to-end test for Genius scraping + Groq analysis.
+End-to-end test for Lrclib lyrics + Groq analysis.
 Usage: python -m scripts.test_analysis
 """
 
-from src.genius import get_lyrics
+from src.lyrics import get_lyrics
 from src.groq_client import analyze_track
 
 track_name = "Galvanize"

@@ -8,7 +8,7 @@ from src.database import (
     save_tracks,
     update_snapshot_id,
 )
-from src.genius import get_lyrics
+from src.lyrics import get_lyrics
 from src.groq_client import analyze_track
 from src.spotify import SpotifyClient
 from src.telegram import (
