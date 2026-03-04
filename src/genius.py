@@ -2,6 +2,7 @@ import logging
 import re
 
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError, sync_playwright
+from playwright_stealth import stealth_sync
 
 logger = logging.getLogger(__name__)
 
@@ -37,9 +38,7 @@ def get_lyrics(track_name: str, artist_name: str) -> str | None:
         )
         try:
             page = context.new_page()
-            page.add_init_script(
-                "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
-            )
+            stealth_sync(page)
 
             logger.info("Fetching lyrics from %s", lyrics_url)
             response = page.goto(lyrics_url, timeout=15000)
