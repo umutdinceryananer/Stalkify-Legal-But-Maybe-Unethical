@@ -7,6 +7,7 @@ from src.database import (
     is_first_run,
     save_tracks,
     update_snapshot_id,
+    update_track_analysis,
 )
 from src.lyrics import get_lyrics
 from src.groq_client import analyze_track
@@ -95,6 +96,8 @@ def _check_playlist(client: SpotifyClient, playlist: dict) -> None:
         "%d new track(s) detected in '%s'.", len(new_tracks), playlist_name
     )
 
+    save_tracks(new_tracks, playlist_id)
+
     for track in new_tracks:
         send_new_track_notification(track, playlist_name)
         time.sleep(1)  # Telegram rate limit: 1 message/second per chat
@@ -105,13 +108,13 @@ def _check_playlist(client: SpotifyClient, playlist: dict) -> None:
             analysis = analyze_track(track.track_name, primary_artist, lyrics)
             if analysis:
                 send_analysis_notification(analysis, lyrics_found=lyrics is not None)
+                update_track_analysis(track.track_id, playlist_id, analysis)
                 time.sleep(1)
         except Exception:
             logger.warning(
                 "Analysis failed for '%s' — skipping.", track.track_name, exc_info=True
             )
 
-    save_tracks(new_tracks, playlist_id)
     update_snapshot_id(playlist_id, api_snapshot)
 
 

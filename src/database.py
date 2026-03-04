@@ -113,6 +113,38 @@ def get_tracks_for_report(playlist_id: str, days: int = 7) -> list[dict]:
             return [dict(row) for row in cur.fetchall()]
 
 
+def update_track_analysis(track_id: str, playlist_id: str, analysis: str) -> None:
+    """Store the Groq emotional analysis for a tracked track."""
+    with _connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                UPDATE tracked_tracks
+                SET analysis = %s
+                WHERE track_id = %s AND playlist_id = %s
+                """,
+                (analysis, track_id, playlist_id),
+            )
+
+
+def get_analyses_for_report(playlist_id: str, days: int = 7) -> list[dict]:
+    """Return tracks with analyses from the last N days for mood reporting."""
+    with _connection() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """
+                SELECT track_name, artist_names, analysis, detected_at
+                FROM tracked_tracks
+                WHERE playlist_id = %s
+                  AND detected_at >= NOW() - INTERVAL '%s days'
+                  AND analysis IS NOT NULL
+                ORDER BY detected_at
+                """,
+                (playlist_id, days),
+            )
+            return [dict(row) for row in cur.fetchall()]
+
+
 def save_tracks(tracks: list[Track], playlist_id: str) -> None:
     if not tracks:
         return
