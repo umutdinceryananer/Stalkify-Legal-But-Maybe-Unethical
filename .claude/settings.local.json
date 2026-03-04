@@ -12,7 +12,8 @@
       "WebFetch(domain:happi.dev)",
       "WebFetch(domain:happi.readme.io)",
       "WebFetch(domain:pypi.org)",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:lrclib.net)"
     ]
   }
 }

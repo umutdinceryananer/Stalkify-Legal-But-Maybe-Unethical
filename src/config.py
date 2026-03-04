@@ -26,7 +26,6 @@ class Config:
     telegram_bot_token: str
     telegram_chat_id: str
     groq_api_key: str | None        # Issue 9 — optional until LLM integration
-    genius_access_token: str | None  # Issue 10 — optional until agentic analysis
 
 
 config = Config(
@@ -36,5 +35,4 @@ config = Config(
     telegram_bot_token=_require("TELEGRAM_BOT_TOKEN"),
     telegram_chat_id=_require("TELEGRAM_CHAT_ID"),
     groq_api_key=_optional("GROQ_API_KEY"),
-    genius_access_token=_optional("GENIUS_ACCESS_TOKEN"),
 )
