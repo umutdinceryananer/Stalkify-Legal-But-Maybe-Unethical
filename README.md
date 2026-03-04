@@ -1,4 +1,4 @@
-# Stalkify-Legal-But-Maybe-Unethical
+# Spotify-OSINT
 
 A Python service that watches public Spotify playlists for new track additions and sends you a Telegram notification the moment something gets added. Runs automatically every 30 minutes via GitHub Actions, costs nothing, and lives rent-free in your head — just like the person whose playlists you're watching.
 
@@ -10,7 +10,7 @@ A Python service that watches public Spotify playlists for new track additions a
 2. If the snapshot hasn't changed since the last run, it does nothing (no browser, no cost, no drama).
 3. If it has changed, it launches a headless Chromium browser (Playwright) to scrape the new tracks from the Spotify web player — because Spotify removed public track access from their API in early 2026.
 4. Sends a Telegram notification for each new track.
-5. Scrapes the track's lyrics from Genius and sends them to Groq (llama-3.3-70b-versatile) for a short emotional analysis, delivered as a second Telegram message.
+5. Fetches the track's lyrics from [Lrclib](https://lrclib.net) and sends them to Groq (llama-3.3-70b-versatile) for a short emotional analysis, delivered as a second Telegram message.
 6. Saves everything to a Supabase (PostgreSQL) database.
 
 ---
@@ -31,8 +31,8 @@ A Python service that watches public Spotify playlists for new track additions a
 ### 1. Clone the repo
 
 ```bash
-git clone https://github.com/your-username/stalkify-but-legal.git
-cd stalkify-but-legal
+git clone https://github.com/your-username/spotify-osint.git
+cd spotify-osint
 ```
 
 ### 2. Create a virtual environment and install dependencies
@@ -161,9 +161,9 @@ This project only monitors **public** playlists. It does not access private play
 
 ---
 
-# Stalkify-Legal-But-Maybe-Unethical
+# Spotify-OSINT
 
-Herkese açık Spotify playlistlerini izleyen ve yeni bir şarkı eklendiği anda sana Telegram bildirimi gönderen bir Python servisi. GitHub Actions üzerinden 30 dakikada bir otomatik çalışır, ücretsizdir ve Genius veya Spotify adamlarını peşime takmadığı sürece çalışacak.
+Herkese açık Spotify playlistlerini izleyen ve yeni bir şarkı eklendiği anda sana Telegram bildirimi gönderen bir Python servisi. GitHub Actions üzerinden 30 dakikada bir otomatik çalışır, ücretsizdir ve kimseyi peşime takmadığı sürece çalışacak.
 
 ---
 
@@ -173,7 +173,7 @@ Herkese açık Spotify playlistlerini izleyen ve yeni bir şarkı eklendiği and
 2. Snapshot son çalıştırmadan beri değişmemişse hiçbir şey yapmaz (tarayıcı açılmaz, işlem olmaz).
 3. Değiştiyse headless Chromium tarayıcı (Playwright) açarak Spotify web playerdan yeni şarkıları çeker — Spotify 2026 başında herkese açık playlist erişimini API'den kaldırdığı için.
 4. Her yeni şarkı için Telegram bildirimi gönderir.
-5. Genius'tan şarkı sözlerini çekip Groq'a (llama-3.3-70b-versatile) göndererek kısa bir duygusal analiz üretir, ikinci bir Telegram mesajı olarak iletir.
+5. [Lrclib](https://lrclib.net)'den şarkı sözlerini çekip Groq'a (llama-3.3-70b-versatile) göndererek kısa bir duygusal analiz üretir, ikinci bir Telegram mesajı olarak iletir.
 6. Her şeyi Supabase (PostgreSQL) veritabanına kaydeder.
 
 ---
@@ -194,8 +194,8 @@ Herkese açık Spotify playlistlerini izleyen ve yeni bir şarkı eklendiği and
 ### 1. Repoyu klonla
 
 ```bash
-git clone https://github.com/kullanici-adin/stalkify-but-legal.git
-cd stalkify-but-legal
+git clone https://github.com/kullanici-adin/spotify-osint.git
+cd spotify-osint
 ```
 
 ### 2. Sanal ortam oluştur ve bağımlılıkları yükle

@@ -13,7 +13,7 @@ def get_lyrics(track_name: str, artist_name: str) -> str | None:
         response = requests.get(
             f"{LRCLIB_BASE}/get",
             params={"track_name": track_name, "artist_name": artist_name},
-            headers={"User-Agent": "Stalkify/1.0"},
+            headers={"User-Agent": "Spotify-OSINT/1.0"},
             timeout=10,
         )
     except requests.RequestException:

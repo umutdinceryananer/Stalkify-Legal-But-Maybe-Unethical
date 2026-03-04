@@ -79,7 +79,7 @@ def send_analysis_notification(analysis: str, lyrics_found: bool = True) -> None
 def send_error_notification(error_message: str) -> None:
     text = "\n".join(
         [
-            "⚠️ *Stalkify \\— Sistem Hatası*",
+            "⚠️ *Spotify\\-OSINT \\— Sistem Hatası*",
             "",
             f"`{_escape(error_message)}`",
         ]
