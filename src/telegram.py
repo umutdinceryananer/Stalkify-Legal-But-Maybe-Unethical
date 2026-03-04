@@ -95,6 +95,20 @@ def send_time_analysis_notification(analysis: str, playlist_name: str, patterns:
     _send(text)
 
 
+def send_mood_report_notification(mood: str, playlist_name: str, track_count: int) -> None:
+    text = "\n".join(
+        [
+            "🧠 *Haftalık Ruh Hali Raporu*",
+            "",
+            f"📋 {_escape(playlist_name)}",
+            f"🎵 {_escape(str(track_count))} şarkının analizine dayanıyor",
+            "",
+            _escape(mood),
+        ]
+    )
+    _send(text)
+
+
 def send_error_notification(error_message: str) -> None:
     text = "\n".join(
         [
