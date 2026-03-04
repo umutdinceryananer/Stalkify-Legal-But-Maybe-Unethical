@@ -76,6 +76,25 @@ def send_analysis_notification(analysis: str, lyrics_found: bool = True) -> None
     _send(text)
 
 
+def send_time_analysis_notification(analysis: str, playlist_name: str, patterns: dict) -> None:
+    peak = f'{patterns["peak_hour"]:02d}:00'
+    total = patterns["total_tracks"]
+    slot = patterns["most_active_slot"]
+    text = "\n".join(
+        [
+            "🕐 *Haftalık Saat Analizi*",
+            "",
+            f"📋 {_escape(playlist_name)}",
+            f"🎵 Son 7 günde {_escape(str(total))} şarkı eklendi",
+            f"⏰ En yoğun saat: {_escape(peak)}",
+            f"📊 En aktif dilim: {_escape(slot)}",
+            "",
+            _escape(analysis),
+        ]
+    )
+    _send(text)
+
+
 def send_error_notification(error_message: str) -> None:
     text = "\n".join(
         [

@@ -3,6 +3,10 @@
 import logging
 from datetime import timezone, timedelta
 
+from groq import Groq
+
+from src.config import config
+
 logger = logging.getLogger(__name__)
 
 _TZ_ISTANBUL = timezone(timedelta(hours=3))
@@ -54,3 +58,43 @@ def analyze_time_patterns(tracks: list[dict]) -> dict | None:
         "peak_hour": peak_hour,
         "most_active_slot": most_active_slot,
     }
+
+
+_MODEL = "llama-3.3-70b-versatile"
+
+
+def generate_time_report(patterns: dict, playlist_name: str) -> str | None:
+    """Send time pattern data to Groq and get a Turkish commentary.
+
+    Returns None if GROQ_API_KEY is not configured.
+    """
+    if not config.groq_api_key:
+        logger.warning("GROQ_API_KEY not set — skipping time report.")
+        return None
+
+    slot_summary = ", ".join(
+        f"{slot}: {count}" for slot, count in patterns["slot_counts"].items()
+    )
+
+    prompt = (
+        f'"{playlist_name}" adlı playlistte son 7 günde '
+        f'{patterns["total_tracks"]} şarkı eklendi.\n\n'
+        f"Zaman dilimi dağılımı (Türkiye saati):\n{slot_summary}\n"
+        f'En yoğun saat: {patterns["peak_hour"]:02d}:00\n'
+        f'En aktif zaman dilimi: {patterns["most_active_slot"]}\n\n'
+        "Bu verilere dayanarak, playlist sahibinin yaşam düzeni ve "
+        "alışkanlıkları hakkında Türkçe bir yorum yap. Tam olarak 2-3 cümle yaz. "
+        "Pesimist ama gerçekçi bir bakış açısı benimse. "
+        "Klişelerden kaçın, doğal bir dil kullan. "
+        "Saatleri ve zaman dilimlerini yorumuna dahil et."
+    )
+
+    client = Groq(api_key=config.groq_api_key)
+    response = client.chat.completions.create(
+        model=_MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.8,
+        max_tokens=400,
+    )
+
+    return response.choices[0].message.content.strip()
