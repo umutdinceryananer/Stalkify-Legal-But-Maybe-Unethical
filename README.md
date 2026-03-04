@@ -155,7 +155,7 @@ You can also trigger the workflow manually from the **Actions** tab.
 
 ## Ethical disclaimer
 
-This project only monitors **public** playlists. It does not access private playlists, user accounts, or any data that isn't already visible to anyone with a Spotify link. Is it weird to automatically track someone's taste in music? I think it's weird, but I know I'm not alone.
+This project only monitors **public** playlists. It does not access private playlists, user accounts, or any data that isn't already visible to anyone with a Spotify link. Is it weird to automatically track someone's taste in music? I think it's weird, but why not?
 
 ---
 
@@ -318,4 +318,4 @@ Workflow'u **Actions** sekmesinden manuel olarak da tetikleyebilirsin.
 
 ## Etik sorumluluk reddi
 
-Bu proje yalnızca **herkese açık** playlistleri izler. Özel playlistlere, kullanıcı hesaplarına ya da Spotify linki olan herkesin zaten göremeyeceği hiçbir veriye erişemez. Birinin müzik zevkini otomatik olarak takip etmek tuhaf mı? Bence tuhaf, ama yalnız olmadığımı biliyorum.
+Bu proje yalnızca **herkese açık** playlistleri izler. Özel playlistlere, kullanıcı hesaplarına ya da Spotify linki olan herkesin zaten göremeyeceği hiçbir veriye erişemez. Birinin müzik zevkini otomatik olarak takip etmek tuhaf mı? Bence tuhaf, ama neden olmasın?
