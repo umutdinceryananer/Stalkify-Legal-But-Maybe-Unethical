@@ -62,10 +62,13 @@ def send_new_track_notification(track: Track, playlist_name: str) -> None:
     _send(text)
 
 
-def send_analysis_notification(analysis: str) -> None:
+def send_analysis_notification(analysis: str, lyrics_found: bool = True) -> None:
+    header = "🧠 *Analiz*"
+    if not lyrics_found:
+        header += "\n_Şarkı sözleri bulunamadı, yorum şarkı adı ve sanatçıya göre yapıldı\\._"
     text = "\n".join(
         [
-            "🧠 *Analiz*",
+            header,
             "",
             _escape(analysis),
         ]

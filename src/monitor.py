@@ -104,7 +104,7 @@ def _check_playlist(client: SpotifyClient, playlist: dict) -> None:
             lyrics = get_lyrics(track.track_name, primary_artist)
             analysis = analyze_track(track.track_name, primary_artist, lyrics)
             if analysis:
-                send_analysis_notification(analysis)
+                send_analysis_notification(analysis, lyrics_found=lyrics is not None)
                 time.sleep(1)
         except Exception:
             logger.warning(
