@@ -1,4 +1,4 @@
-"""Track addition time analysis — detects when a playlist owner is most active."""
+"""Weekly playlist reports — time pattern analysis and mood summary."""
 
 import logging
 from datetime import timezone, timedelta
@@ -103,10 +103,64 @@ def generate_time_report(patterns: dict, playlist_name: str) -> str | None:
     return response.choices[0].message.content.strip()
 
 
+def generate_mood_report(analyses: list[dict], playlist_name: str) -> str | None:
+    """Summarize the emotional tone of recent track analyses.
+
+    Takes a list of dicts with 'track_name', 'artist_names', 'analysis' keys.
+    Returns None if GROQ_API_KEY is not configured or analyses list is empty.
+    """
+    if not analyses:
+        return None
+
+    from groq import Groq
+    from src.config import config
+
+    if not config.groq_api_key:
+        logger.warning("GROQ_API_KEY not set — skipping mood report.")
+        return None
+
+    track_lines = []
+    for a in analyses:
+        artists = ", ".join(a["artist_names"])
+        track_lines.append(f'- "{a["track_name"]}" ({artists}): {a["analysis"]}')
+
+    analyses_text = "\n".join(track_lines)
+
+    prompt = (
+        f'"{playlist_name}" adlı playlistte son 7 günde {len(analyses)} şarkı eklendi. '
+        f"Her şarkı için yapılmış bireysel duygusal analizler şunlar:\n\n"
+        f"{analyses_text}\n\n"
+        "Bu analizlerin tamamına bakarak, playlist sahibinin bu haftaki genel "
+        "ruh halini özetle.\n\n"
+        "Kurallar:\n"
+        "- Yanıtını YALNIZCA Türkçe yaz. Başka dilde kesinlikle kelime kullanma.\n"
+        "- Tam olarak 3-4 cümle yaz.\n"
+        "- Pesimist ama gerçekçi bir bakış açısı benimse.\n"
+        "- Klişelerden kaçın, günlük konuşma dili kullan.\n"
+        "- Tekil şarkıları tekrar analiz etme, genel eğilimi yorumla.\n"
+        "- Eğer belirgin bir tema varsa (ayrılık, özlem, öfke vb.) bunu vurgula.\n"
+        "- Kısa ve öz ol, gereksiz tekrar yapma."
+    )
+
+    client = Groq(api_key=config.groq_api_key)
+    response = client.chat.completions.create(
+        model=_MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.8,
+        max_tokens=500,
+    )
+
+    return response.choices[0].message.content.strip()
+
+
 def run() -> None:
-    """Generate and send weekly time analysis for all active playlists."""
-    from src.database import get_active_playlists, get_tracks_for_report
-    from src.telegram import send_time_analysis_notification, send_error_notification
+    """Generate and send weekly reports (time analysis + mood) for all active playlists."""
+    from src.database import get_active_playlists, get_tracks_for_report, get_analyses_for_report
+    from src.telegram import (
+        send_time_analysis_notification,
+        send_mood_report_notification,
+        send_error_notification,
+    )
 
     playlists = get_active_playlists()
     if not playlists:
@@ -118,6 +172,7 @@ def run() -> None:
         playlist_name = playlist["name"]
 
         try:
+            # --- Time analysis ---
             tracks = get_tracks_for_report(playlist_id)
             patterns = analyze_time_patterns(tracks)
 
@@ -126,12 +181,18 @@ def run() -> None:
                 continue
 
             commentary = generate_time_report(patterns, playlist_name)
-            if commentary is None:
-                logger.warning("Could not generate report for '%s'.", playlist_name)
-                continue
+            if commentary:
+                send_time_analysis_notification(commentary, playlist_name, patterns)
+                logger.info("Time analysis sent for '%s'.", playlist_name)
 
-            send_time_analysis_notification(commentary, playlist_name, patterns)
-            logger.info("Time analysis sent for '%s'.", playlist_name)
+            # --- Mood report ---
+            analyses = get_analyses_for_report(playlist_id)
+            mood = generate_mood_report(analyses, playlist_name)
+            if mood:
+                send_mood_report_notification(mood, playlist_name, len(analyses))
+                logger.info("Mood report sent for '%s'.", playlist_name)
+            else:
+                logger.info("No analyses available for mood report '%s'.", playlist_name)
 
         except Exception as exc:
             logger.exception("Report failed for '%s'.", playlist_name)
