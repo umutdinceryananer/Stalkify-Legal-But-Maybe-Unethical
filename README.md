@@ -220,9 +220,9 @@ And you can already see the answer. My practice of thinking about human values, 
 
 Without dragging this out further: the corridor and its potential doors I'm talking about have nothing to do with real people or institutions — but whether you believe that or not is entirely up to you.
 
-Before we get to the technical stuff, in keeping with the concept, let me squeeze in a song and leave you alone with this project we built with Claude (~90% Claude, if we're being honest).
+Before saying goodbye, in keeping with the concept, let me squeeze in a song and leave you alone with this project we built with Claude (~90% Claude, if we're being honest).
 
-🎵 {youtube link for cilekesh song goes here}
+[Çilekeş - Y.O.K.](https://www.youtube.com/watch?v=s9KTAxJGqks)
 
 Take care.
 
